@@ -60,7 +60,7 @@ func main() {
 			for _, item := range content {
 				if begin {
 					begin = false
-					_, err := writer.Write([]byte{'{'})
+					_, err := writer.Write([]byte{'['})
 					if err != nil {
 						panic(err)
 					}
