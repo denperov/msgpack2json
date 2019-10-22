@@ -10,11 +10,11 @@ import (
 )
 
 var indentation bool
-var mergeArrays bool
+var j2m bool
 
 func init() {
 	flag.BoolVar(&indentation, "i", false, "indentation")
-	flag.BoolVar(&mergeArrays, "m", false, "merge-arrays")
+	flag.BoolVar(&j2m, "j2m", false, "json to msgpack")
 }
 
 func main() {
@@ -23,13 +23,10 @@ func main() {
 	reader := os.Stdin
 	writer := os.Stdout
 
-	decoder := msgpack.NewDecoder(reader)
-	encoder := json.NewEncoder(writer)
-	if indentation {
-		encoder.SetIndent("", "\t")
-	}
+	if j2m {
+		decoder := json.NewDecoder(reader)
+		encoder := msgpack.NewEncoder(writer)
 
-	if !mergeArrays {
 		for {
 			var content interface{}
 			err := decoder.Decode(&content)
@@ -46,9 +43,14 @@ func main() {
 			}
 		}
 	} else {
-		begin := true
+		decoder := msgpack.NewDecoder(reader)
+		encoder := json.NewEncoder(writer)
+		if indentation {
+			encoder.SetIndent("", "\t")
+		}
+
 		for {
-			var content []interface{}
+			var content interface{}
 			err := decoder.Decode(&content)
 			if err == io.EOF {
 				break
@@ -57,29 +59,10 @@ func main() {
 				panic(err)
 			}
 
-			for _, item := range content {
-				if begin {
-					begin = false
-					_, err := writer.Write([]byte{'['})
-					if err != nil {
-						panic(err)
-					}
-				} else {
-					_, err := writer.Write([]byte{','})
-					if err != nil {
-						panic(err)
-					}
-				}
-
-				err := encoder.Encode(item)
-				if err != nil {
-					panic(err)
-				}
+			err = encoder.Encode(content)
+			if err != nil {
+				panic(err)
 			}
-		}
-		_, err := writer.Write([]byte{']'})
-		if err != nil {
-			panic(err)
 		}
 	}
 }
